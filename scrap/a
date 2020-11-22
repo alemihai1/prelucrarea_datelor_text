@@ -1,0 +1,59 @@
+from urllib.request import urlopen as ureq
+from bs4 import BeautifulSoup as soup
+import urllib.request
+import csv
+
+filename = "pcgarage.csv"
+f = open(filename, "w")
+
+req = urllib.request.Request("https://www.pcgarage.ro/notebook-laptop/", headers={"User-Agent": "Chrome"})
+uclient = ureq(req)
+page_html = uclient.read()
+uclient.close()
+
+page_soup = soup(page_html, "html.parser")
+
+containers = page_soup.findAll("div", {"class": "product_box_container"})
+len(containers)
+
+container = containers[0]
+
+req = urllib.request.Request(container.a['href'], headers={"User-Agent": "Chrome"})
+uclient = ureq(req)
+page_html = uclient.read()
+uclient.close()
+
+page_soup1 = soup(page_html, "html.parser")
+comment_page = page_soup1.findAll("p", {"class": "ar_see_all clearfix"})
+
+req = urllib.request.Request(comment_page[0].a['href'], headers={"User-Agent": "Chrome"})
+uclient = ureq(req)
+page_html = uclient.read()
+uclient.close()
+
+page_soup2 = soup(page_html, "html.parser")
+reviews = page_soup2.findAll("div", {"itemprop": "review"})
+
+
+for review in reviews:
+    name = review.findAll("span", {"itemprop": "author"})
+    name = name[0].text.strip()
+    rating = review.findAll("span", {"itemprop": "ratingValue"})
+    rating = rating[0].text.strip()
+    comments = review.findAll("p", {"itemprop": "description"})
+    pro = "-"
+    contra = "-"
+    altele = "-"
+    for comment in comments:
+        cat, *_ = comment.findAll("b")
+        if cat.text.strip() == 'Pro:' :
+            pro = (comment.text.strip()).replace("\n", " ").strip()
+        elif cat.text.strip() == 'Contra:' :
+            contra = (comment.text.strip()).replace("\n", " ").strip()
+        else:
+            altele = (comment.text.strip()).replace("\n", " ").strip()
+    row = name + ";" + rating + ";" + pro + ";" + contra + ";" + altele + "\n"
+    print(row)
+    row = row.encode("utf-16")
+    f.write(row)
+f.close()
